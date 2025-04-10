@@ -1,4 +1,4 @@
-
+// de implementat copii ca enum.
 
 #[derive(Clone)]
 pub(crate) enum ClickedEvent {
@@ -123,7 +123,7 @@ type Measurement = Vec<i32>;
 
 
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub(crate) struct BoundingBox {
     pub x: i32,
     pub y: i32,
@@ -177,7 +177,7 @@ impl ViewEvent {
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub(crate) enum ViewPossibleEvent {
     Idle,
     Click,
@@ -190,9 +190,12 @@ type Func<S> = fn(S) -> S;
 pub(crate) enum Child<S> {
     view(View<S>), _view(_View)
 }
+
+
+
 #[derive(Default)]
 pub(crate) struct View<S> {
-    pub children: Vec<View<S>>,
+    pub children: Vec<Child<S>>,
     pub view_type: ViewType,
     pub id: &'static str,
     pub event_hashmap: EventMap<S>,
@@ -255,7 +258,7 @@ impl<T> View<T> {
         }
 
         let total_len: i32 = self.get_dimension();
-        let set_children: Vec<i32> = self.children.iter().filter(|item| {(item).bounding_box.is_valid2(self.view_type.clone())}).map(|item| {item.get_dimension()}).collect();
+        let set_children: Vec<i32> = self.children.iter().filter(|item| {(item).get_bbox().is_valid2(self.view_type.clone())}).map(|item| {item.get_dimension()}).collect();
         let unset_count = (self.children.len() - set_children.iter().count()) as i32;
         let set_len: i32 = set_children.iter().sum();
 
@@ -263,24 +266,25 @@ impl<T> View<T> {
 
         let one_child_len = unset_len / unset_count;
         let my_old_children = mem::take(&mut self.children);
-        let unmapped: Vec<View<_>> = my_old_children.into_iter().map(|c| { c.with_dimension(one_child_len, self.view_type.clone(), self.get_other_dimension()) }).collect();
+        let unmapped: Vec<Child<_>> = my_old_children.into_iter().map(|c| { c.with_dimension(one_child_len, self.view_type.clone(), self.get_other_dimension()) }).collect();
         self.children = unmapped.into_iter().map(|c| { c.set_bounding_boxes() }).collect();
         self
     }
 }
-impl<S: Default + Serialize + for<'a> Deserialize<'a> + 'static> View<S> {
-    pub fn to<T>(self) -> View<T> {
-        let new_children = self.children.into_iter().map(|c| c.to::<T>()).collect();
 
-        let me = View {
-            children: new_children,
-            view_type: self.view_type,
-            id: self.id,
-            event_hashmap: HashMap::new(),
-            bounding_box: self.bounding_box,
-        };
-        me
-    }
+impl<S: Default + Serialize + for<'a> Deserialize<'a> + 'static> View<S> {
+    // pub fn to<T>(self) -> View<T> {
+    //     let new_children = self.children.into_iter().map(|c| c.to::<T>()).collect();
+    //
+    //     let me = View {
+    //         children: new_children,
+    //         view_type: self.view_type,
+    //         id: self.id,
+    //         event_hashmap: HashMap::new(),
+    //         bounding_box: self.bounding_box,
+    //     };
+    //     me
+    // }
     pub fn to_(self) -> _View {
         let new_children = self.children.into_iter().map(|c| c.to_()).collect();
 
@@ -334,10 +338,12 @@ impl<S: Default + Serialize + for<'a> Deserialize<'a> + 'static> View<S> {
                 state = new_state;
             }
 
-            let mut new_children: Vec<View<S>> = vec![];
+            let mut new_children: Vec<Child<S>> = vec![];
             for child in self.children.into_iter() {
-                let (new_state, new_child) = child.with_(state, event.clone());
-                state = new_state;
+                // TODO: ISSUE -- DECOMMENT LINES -- FIX
+                // let (new_state, new_child) = child.with_(state, event.clone());
+                let new_child = child;
+                // state = new_state;
                 new_children.push(new_child);
             }
 

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use colored::Colorize;
-use crate::views::{_View, View, ViewType};
+use crate::views::{Child, View, ViewType, _View};
 use crate::views::ViewType::VSTACK;
 
 pub trait Frame {
@@ -48,6 +48,14 @@ impl<T> Frame for View<T> {
     // }
 }
 
+impl<T> Display for Child<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+           Child::view(x) => write!(f, "{}", x),
+           Child::_view(x) => write!(f, "{}", x)
+        }
+    }
+}
 
 impl<T> Display for View<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -66,7 +74,6 @@ impl<T> Display for View<T> {
         write!(f, "{}", string.as_str())
     }
 }
-
 
 impl Display for _View {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
